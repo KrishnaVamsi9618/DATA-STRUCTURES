@@ -1,0 +1,77 @@
+#include <stdio.h>
+#include <stdlib.h>
+# define V=6
+#define e=9
+struct Edge {
+    int src, dest, weight;
+};
+struct Graph {
+    int V, E;
+    struct Edge* edge;
+};
+struct Graph* createGraph(int v, int e) {
+    struct Graph* graph = (struct Graph*)malloc(sizeof(struct Graph));
+    graph->V = v;
+    graph->E = e;
+    graph->edge = (struct Edge*)malloc(e * sizeof(struct Edge));
+    return graph;
+}
+struct Subset {
+    int parent;
+    int rank;
+};
+int find(struct Subset subsets[], int i) {
+    if (subsets[i].parent != i)
+        subsets[i].parent = find(subsets, subsets[i].parent);
+    return subsets[i].parent;
+}
+void Union(struct Subset subsets[], int x, int y) {
+    int xroot = find(subsets, x);
+    int yroot = find(subsets, y);
+    if (subsets[xroot].rank < subsets[yroot].rank)
+        subsets[xroot].parent = yroot;
+    else if (subsets[xroot].rank > subsets[yroot].rank)
+        subsets[yroot].parent = xroot;
+    else {
+        subsets[yroot].parent = xroot;
+        subsets[xroot].rank++;
+    }
+}
+int compareEdges(const void* a, const void* b) {
+    return ((struct Edge*)a)->weight - ((struct Edge*)b)->weight;
+}
+void kruskalMST(struct Graph* graph) {
+    int V = graph->V;
+    struct Edge result[V];
+    int e = 0;
+    qsort(graph->edge, graph->E, sizeof(graph->edge[0]), compareEdges);
+    struct Subset* subsets = (struct Subset*)malloc(V * sizeof(struct Subset));
+    for (int v = 0; v < V; v++){
+        subsets[v].parent = v;
+        subsets[v].rank = 0;
+    }
+    while (e < V - 1 && graph->edge[e].weight != 0) {
+        struct Edge next_edge = graph->edge[e++];
+        int x = find(subsets, next_edge.src);
+        int y = find(subsets, next_edge.dest);
+        if (x != y) {
+            result[e - 1] = next_edge;
+            Union(subsets, x, y);
+        }
+    }
+    printf("Minimum Spanning Tree:\n");
+    for (int i = 0; i < e - 1; i++) {
+        printf("%d - %d, weight: %d\n", result[i].src, result[i].dest, result[i].weight);
+    }
+    free(subsets);
+}
+int main() {
+    struct Graph* graph = createGraph(V, E);
+    graph->edge[0].src = 0;
+    graph->edge[0].dest = 1;
+    graph->edge[0].weight = 4;
+    kruskalMST(graph);
+    free(graph->edge);
+    free(graph);
+    return 0;
+}
